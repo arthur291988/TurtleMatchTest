@@ -1,14 +1,10 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using TreeEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class Tile : MonoBehaviour
 {
 
-    private static Tile selected; // 1 
+    //private static Tile selected; // 1 
     private SpriteRenderer Renderer; // 2
     [NonSerialized]
     public Vector2Int Position;
@@ -30,8 +26,12 @@ public class Tile : MonoBehaviour
 
     private bool swipeSessionStarted;
 
+    private Vector2 moveToPos;
+
     [NonSerialized]
     public SpriteRenderer _spriteRenderer;
+
+    private bool isMoving;
 
     // Start is called before the first frame update
     void Start()
@@ -51,6 +51,11 @@ public class Tile : MonoBehaviour
     public void Unselect() // 5 
     {
         Renderer.color = Color.white;
+    }
+
+    public void DisactivateTile()
+    {
+        _gameObject.SetActive(false);
     }
 
     private void OnMouseDown() //6
@@ -129,14 +134,26 @@ public class Tile : MonoBehaviour
         }
     }
 
-    private void OnMouseUp()
+    public void moveTo(Vector2 moveToPos, int newColumn, int newRow)
     {
-        
+        this.moveToPos = moveToPos;
+        isMoving = true;
+        row = newRow;
+        column = newColumn;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        
+        if (isMoving)
+        {
+            _transform.position = Vector2.Lerp(_transform.position, moveToPos, 0.2f);
+            if (((Vector2)_transform.position - moveToPos).magnitude < 0.15f)
+            {
+                isMoving = false;
+                _transform.position = moveToPos;
+
+            }
+        }
     }
+
 }

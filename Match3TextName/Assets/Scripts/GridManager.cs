@@ -9,6 +9,12 @@ using static UnityEngine.Rendering.DebugUI.Table;
 
 public class GridManager : MonoBehaviour
 {
+    [HideInInspector]
+    public GameObject ObjectPulled;
+    [HideInInspector]
+    public List<GameObject> ObjectPulledList;
+
+
     public List<Sprite> Sprites = new List<Sprite>();
     public GameObject TilePrefab;
     public int GridDimension = 8;
@@ -24,9 +30,14 @@ public class GridManager : MonoBehaviour
     private Tile selectedTile;
     private Tile moveToTile;
 
+
+    public List<Tile> columnMatches;
+    public List<Tile> rowMatches;
+
     [NonSerialized]
     public bool isSwiping;
     private bool isSwipingBack;
+
 
     public static GridManager Instance { get; private set; }
 
@@ -36,6 +47,8 @@ public class GridManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        columnMatches = new List<Tile>();
+        rowMatches = new List<Tile>();
         Grid = new Tile[GridDimension, GridDimension];
         InitGrid();
         isSwiping = false;
@@ -69,17 +82,22 @@ public class GridManager : MonoBehaviour
                     possibleSprites.Remove(down1);
                 }
 
-                GameObject newTile = Instantiate(TilePrefab); // 3
-                SpriteRenderer renderer = newTile.GetComponent<SpriteRenderer>(); // 4
+
+                ObjectPulledList = ObjectPuller.current.GetTilePullList();
+                ObjectPulled = ObjectPuller.current.GetGameObjectFromPull(ObjectPulledList);
+
+
+                SpriteRenderer renderer = ObjectPulled.GetComponent<SpriteRenderer>(); // 4
                 renderer.sprite = possibleSprites[UnityEngine.Random.Range(0, possibleSprites.Count)]; // 5
-                newTile.transform.parent = transform; // 6
-                newTile.transform.position = new Vector3(column * Distance, row * Distance, 0) + positionOffset; // 7
-                newTile.transform.parent = transform;
-                Tile tile = newTile.GetComponent<Tile>();
+                //ObjectPulled.transform.parent = transform; // 6
+                ObjectPulled.transform.position = new Vector3(column * Distance, row * Distance, 0) + positionOffset; // 7
+                Tile tile = ObjectPulled.GetComponent<Tile>();
                 tile.Position = new Vector2Int(column, row);
                 tile.row = row;
                 tile.column = column;
                 tile._spriteRenderer = renderer;
+
+                ObjectPulled.SetActive(true);
 
                 Grid[column, row] = tile; // 8
             }
@@ -117,7 +135,7 @@ public class GridManager : MonoBehaviour
         {
             do
             {
-                FillHoles();
+                //FillHoles();
             } while (CheckMatches());
         }
     }
@@ -128,7 +146,7 @@ public class GridManager : MonoBehaviour
             || row < 0 || row >= GridDimension)
             return null;
         Tile tile = Grid[column, row];
-        SpriteRenderer renderer = tile.GetComponent<SpriteRenderer>();
+        SpriteRenderer renderer = tile._spriteRenderer;
         return renderer.sprite;
     }
 
@@ -138,24 +156,30 @@ public class GridManager : MonoBehaviour
              || row < 0 || row >= GridDimension)
             return null;
         Tile tile = Grid[column, row];
-        SpriteRenderer renderer = tile.GetComponent<SpriteRenderer>();
+        SpriteRenderer renderer = tile._spriteRenderer;
         return renderer;
     }
 
     bool CheckMatches()
     {
         HashSet <SpriteRenderer> matchedTiles = new HashSet <SpriteRenderer>(); // 1
+        HashSet<Tile> matchedTileTiles = new HashSet<Tile>(); 
         for (int row = 0; row < GridDimension; row++)
         {
             for (int column = 0; column < GridDimension; column++) // 2
             {
                 SpriteRenderer current = GetSpriteRendererAt(column, row); // 3
+                Tile currentTile = Grid[column, row];
 
                 List<SpriteRenderer> horizontalMatches = FindColumnMatchForTile(column, row, current.sprite); // 4
+                
                 if (horizontalMatches.Count >= 2)
                 {
                     matchedTiles.UnionWith(horizontalMatches);
                     matchedTiles.Add(current); // 5
+
+                    matchedTileTiles.UnionWith(columnMatches);
+                    matchedTileTiles.Add(currentTile);
                 }
 
                 List<SpriteRenderer> verticalMatches = FindRowMatchForTile(column, row, current.sprite); // 6
@@ -163,28 +187,41 @@ public class GridManager : MonoBehaviour
                 {
                     matchedTiles.UnionWith(verticalMatches);
                     matchedTiles.Add(current);
+
+                    matchedTileTiles.UnionWith(rowMatches);
+                    matchedTileTiles.Add(currentTile);
                 }
             }
         }
 
-        foreach (SpriteRenderer renderer in matchedTiles) // 7
+        //foreach (SpriteRenderer renderer in matchedTiles) // 7
+        //{
+        //    renderer.sprite = null;
+        //}
+        foreach (Tile tile in matchedTileTiles) // 7
         {
-            renderer.sprite = null;
+            tile.DisactivateTile();
         }
+
+
         return matchedTiles.Count > 0; // 8
     }
 
     List <SpriteRenderer> FindColumnMatchForTile(int col, int row, Sprite sprite)
     {
         List<SpriteRenderer> result = new List<SpriteRenderer>();
+        columnMatches.Clear();
+
         for (int i = col + 1; i < GridDimension; i++)
         {
             SpriteRenderer nextColumn = GetSpriteRendererAt(i, row);
+            Tile tile = Grid[i, row];
             if (nextColumn.sprite != sprite)
             {
                 break;
             }
             result.Add(nextColumn);
+            columnMatches.Add(tile);
         }
         return result;
     }
@@ -192,25 +229,48 @@ public class GridManager : MonoBehaviour
     List <SpriteRenderer> FindRowMatchForTile(int col, int row, Sprite sprite)
     {
         List<SpriteRenderer> result = new List<SpriteRenderer> ();
+        rowMatches.Clear();
         for (int i = row + 1; i < GridDimension; i++)
         {
             SpriteRenderer nextRow = GetSpriteRendererAt(col, i);
+            Tile tile = Grid[col, i];
             if (nextRow.sprite != sprite)
             {
                 break;
             }
             result.Add(nextRow);
+            columnMatches.Add(tile);
         }
         return result;
     }
 
-    void FillHoles()
-    {
+    //void FillHoles()
+    //{
+    //    for (int column = 0; column < GridDimension; column++)
+    //    {
+    //        for (int row = 0; row < GridDimension; row++) // 1
+    //        {
+    //            while (GetSpriteRendererAt(column, row).sprite == null) // 2
+    //            {
+    //                for (int filler = row; filler < GridDimension - 1; filler++) // 3
+    //                {
+    //                    SpriteRenderer current = GetSpriteRendererAt(column, filler); // 4
+    //                    SpriteRenderer next = GetSpriteRendererAt(column, filler + 1);
+    //                    current.sprite = next.sprite;
+    //                }
+    //                SpriteRenderer last = GetSpriteRendererAt(column, GridDimension - 1);
+    //                last.sprite = Sprites[UnityEngine.Random.Range(0, Sprites.Count)]; // 5
+    //            }
+    //        }
+    //    }
+    //}
+
+    private void getAllMatchedTiles() {
         for (int column = 0; column < GridDimension; column++)
         {
             for (int row = 0; row < GridDimension; row++) // 1
             {
-                while (GetSpriteRendererAt(column, row).sprite == null) // 2
+                while (!Grid[column,row].isActiveAndEnabled) // 2
                 {
                     for (int filler = row; filler < GridDimension - 1; filler++) // 3
                     {
