@@ -58,7 +58,7 @@ public class GridManager : MonoBehaviour
     //populating initial grids on scene
     private void InitGrid()
     {
-        Vector3 positionOffset = transform.position - new Vector3(GridDimension /** Distance*/ / 2.0f, GridDimension /** Distance*/ / 2.0f, 0); // 1
+        Vector3 positionOffset = transform.position - new Vector3(GridDimension /** Distance*/ / 2.0f-0.5f, GridDimension /** Distance*/ / 2.0f, 0); // 1
 
 
         for (int row = 0; row < GridDimension; row++)
@@ -92,7 +92,8 @@ public class GridManager : MonoBehaviour
                 //ObjectPulled.transform.parent = transform; // 6
                 ObjectPulled.transform.position = new Vector3(column * Distance, row * Distance, 0) + positionOffset; // 7
                 Tile tile = ObjectPulled.GetComponent<Tile>();
-                tile.Position = new Vector2Int(column, row);
+                tile.Position = ObjectPulled.transform.position;
+                tile.MoveToPosition = tile.Position;
                 tile.row = row;
                 tile.column = column;
                 tile._spriteRenderer = renderer;
@@ -100,20 +101,39 @@ public class GridManager : MonoBehaviour
                 ObjectPulled.SetActive(true);
 
                 Grid[column, row] = tile; // 8
+                //Debug.Log(column+" "+row);
             }
         }
     }
 
+    private void pullNewTile(int column, int row, Vector3 position) {
 
-    public void SwapTiles(Vector2 tile1Position, Vector2 tile2Position) // 1
+        ObjectPulledList = ObjectPuller.current.GetTilePullList();
+        ObjectPulled = ObjectPuller.current.GetGameObjectFromPull(ObjectPulledList); 
+        SpriteRenderer renderer = ObjectPulled.GetComponent<SpriteRenderer>();
+        renderer.sprite = Sprites[UnityEngine.Random.Range(0, Sprites.Count)];
+        ObjectPulled.transform.position = position; 
+        Tile tile = ObjectPulled.GetComponent<Tile>();
+        tile.Position = position;
+        tile.Position = new Vector2 (position.x, position.y-Distance);
+        tile.row = row;
+        tile.column = column;
+        tile._spriteRenderer = renderer;
+
+        ObjectPulled.SetActive(true);
+
+        Grid[column, row] = tile; // 8
+    }
+
+
+    public void SwapTiles(Tile tile1, Tile tile2) // 1
     {
 
-        // 2
-        Tile tile1 = Grid[(int)tile1Position.x, (int)tile1Position.y];
-        SpriteRenderer renderer1 = tile1._spriteRenderer;
+        Tile tileThis1 = tile1;
+        SpriteRenderer renderer1 = tileThis1._spriteRenderer;
 
-        Tile tile2 = Grid[(int)tile2Position.x, (int)tile2Position.y];
-        SpriteRenderer renderer2 = tile2._spriteRenderer;
+        Tile tileThis2 = tile2; 
+        SpriteRenderer renderer2 = tileThis2._spriteRenderer;
 
         //3
         Sprite temp = renderer1.sprite;
@@ -135,7 +155,7 @@ public class GridManager : MonoBehaviour
         {
             do
             {
-                //FillHoles();
+                getAllMatchedTiles();
             } while (CheckMatches());
         }
     }
@@ -200,7 +220,8 @@ public class GridManager : MonoBehaviour
         //}
         foreach (Tile tile in matchedTileTiles) // 7
         {
-            tile.DisactivateTile();
+            tile.isMatched = true;
+            //tile.DisactivateTile();
         }
 
 
@@ -270,18 +291,28 @@ public class GridManager : MonoBehaviour
         {
             for (int row = 0; row < GridDimension; row++) // 1
             {
-                while (!Grid[column,row].isActiveAndEnabled) // 2
+                while (Grid[column,row].isMatched) // 2
                 {
+                    Vector2 moveToPosForPulledTile = Vector2.zero; 
+                    //going up on column and assign new coordinates to upper tile, wit other words, make coordinates of upper tile equal to current tile
                     for (int filler = row; filler < GridDimension - 1; filler++) // 3
                     {
-                        SpriteRenderer current = GetSpriteRendererAt(column, filler); // 4
-                        SpriteRenderer next = GetSpriteRendererAt(column, filler + 1);
-                        current.sprite = next.sprite;
+                        Tile next = Grid[column, filler+1];
+                        Tile current = Grid[column, filler];
+                        next.row = filler;
+                        next.MoveToPosition = current.Position;
+                        moveToPosForPulledTile = new Vector2 (current.Position.x, current.Position.y+ Distance);
+                        current.DisactivateTile();
                     }
-                    SpriteRenderer last = GetSpriteRendererAt(column, GridDimension - 1);
-                    last.sprite = Sprites[UnityEngine.Random.Range(0, Sprites.Count)]; // 5
+                    pullNewTile(column, GridDimension - 1, new Vector3(moveToPosForPulledTile.x, moveToPosForPulledTile.y, 0));
                 }
             }
+        }
+
+        foreach (Tile tile in Grid) {
+            if (tile.Position != tile.MoveToPosition) tile.moveTo();
+            if (tile.isMatched) tile.DisactivateTile();
+            Grid[tile.column, tile.row] = tile;
         }
     }
 
@@ -305,6 +336,12 @@ public class GridManager : MonoBehaviour
         tile1.row = tile2.row;
         tile2.column = tempColumn;
         tile2.row = tempRow;
+
+        Vector2 tempPosition = tile1.Position;
+        tile1.Position = tile2.Position;
+        tile2.Position = tempPosition;
+        tile1.MoveToPosition = tile1.Position;
+        tile2.MoveToPosition = tile2.Position;
     }
 
     // Update is called once per frame
@@ -316,7 +353,7 @@ public class GridManager : MonoBehaviour
             if (((Vector2)selectedTileTransform.position - moveToTilePos).magnitude < 0.15f) {
 
                 changeTilesOnGrid(selectedTile, moveToTile);
-                if (CheckMatches()) SwapTiles(moveToTilePos, selectedTilePos);
+                if (CheckMatches()) SwapTiles(moveToTile, selectedTile);
                 else {
                     isSwiping = false;
                     isSwipingBack = true;

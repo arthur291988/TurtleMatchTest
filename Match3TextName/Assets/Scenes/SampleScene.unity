@@ -440,7 +440,9 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 7ed7ec981abd75e49964c15ad9df0cf0, type: 3}
   TilePrefab: {fileID: 8240428727968202350, guid: 3207d6cefe6d64d4c9986bb5143433a2, type: 3}
   GridDimension: 8
-  Distance: 1.1
+  Distance: 1
+  columnMatches: []
+  rowMatches: []
 --- !u!4 &1274217707
 Transform:
   m_ObjectHideFlags: 0

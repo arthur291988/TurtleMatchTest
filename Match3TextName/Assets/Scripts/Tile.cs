@@ -7,7 +7,10 @@ public class Tile : MonoBehaviour
     //private static Tile selected; // 1 
     private SpriteRenderer Renderer; // 2
     [NonSerialized]
-    public Vector2Int Position;
+    public Vector2 Position;
+    [NonSerialized]
+    public Vector2 MoveToPosition;
+
     [NonSerialized]
     public Transform _transform;
     private Vector2 touchStartPos;
@@ -26,12 +29,19 @@ public class Tile : MonoBehaviour
 
     private bool swipeSessionStarted;
 
-    private Vector2 moveToPos;
 
     [NonSerialized]
     public SpriteRenderer _spriteRenderer;
 
     private bool isMoving;
+
+    public bool isMatched;
+
+    //private void OnEnable()
+    //{
+    //    isMoving=false;
+    //    isMatched=false;
+    //}
 
     // Start is called before the first frame update
     void Start()
@@ -55,6 +65,8 @@ public class Tile : MonoBehaviour
 
     public void DisactivateTile()
     {
+        isMoving = false;
+        isMatched = false;
         _gameObject.SetActive(false);
     }
 
@@ -134,24 +146,21 @@ public class Tile : MonoBehaviour
         }
     }
 
-    public void moveTo(Vector2 moveToPos, int newColumn, int newRow)
+    public void moveTo()
     {
-        this.moveToPos = moveToPos;
         isMoving = true;
-        row = newRow;
-        column = newColumn;
     }
 
     void Update()
     {
         if (isMoving)
         {
-            _transform.position = Vector2.Lerp(_transform.position, moveToPos, 0.2f);
-            if (((Vector2)_transform.position - moveToPos).magnitude < 0.15f)
+            _transform.position = Vector2.Lerp(_transform.position, MoveToPosition, 0.2f);
+            if (((Vector2)_transform.position - MoveToPosition).magnitude < 0.15f)
             {
                 isMoving = false;
-                _transform.position = moveToPos;
-
+                _transform.position = MoveToPosition;
+                Position = MoveToPosition;
             }
         }
     }
