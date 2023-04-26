@@ -58,7 +58,7 @@ public class GridManager : MonoBehaviour
     //populating initial grids on scene
     private void InitGrid()
     {
-        Vector3 positionOffset = transform.position - new Vector3(GridDimension /** Distance*/ / 2.0f-0.5f, GridDimension /** Distance*/ / 2.0f, 0); // 1
+        Vector3 positionOffset = transform.position - new Vector3(GridDimension /** Distance*/ / 2.0f-0.5f+ Distance/2, GridDimension /** Distance*/ / 2.0f, 0); // 1
 
 
         for (int row = 0; row < GridDimension; row++)
@@ -115,7 +115,7 @@ public class GridManager : MonoBehaviour
         ObjectPulled.transform.position = position; 
         Tile tile = ObjectPulled.GetComponent<Tile>();
         tile.Position = position;
-        tile.Position = new Vector2 (position.x, position.y-Distance);
+        tile.MoveToPosition = new Vector2 (position.x, position.y-Distance);
         tile.row = row;
         tile.column = column;
         tile._spriteRenderer = renderer;
@@ -136,28 +136,28 @@ public class GridManager : MonoBehaviour
         SpriteRenderer renderer2 = tileThis2._spriteRenderer;
 
         //3
-        Sprite temp = renderer1.sprite;
-        renderer1.sprite = renderer2.sprite;
-        renderer2.sprite = temp;
+        //Sprite temp = renderer1.sprite;
+        //renderer1.sprite = renderer2.sprite;
+        //renderer2.sprite = temp;
 
         isSwiping = false;
 
 
-        bool changesOccurs = CheckMatches();
-        if (!changesOccurs)
-        {
-            temp = renderer1.sprite;
-            renderer1.sprite = renderer2.sprite;
-            renderer2.sprite = temp;
-            isSwipingBack = true;
-        }
-        else
-        {
+        //bool changesOccurs = CheckMatches();
+        //if (!changesOccurs)
+        //{
+        //    temp = renderer1.sprite;
+        //    renderer1.sprite = renderer2.sprite;
+        //    renderer2.sprite = temp;
+        //    isSwipingBack = true;
+        //}
+        //else
+        //{
             do
             {
                 getAllMatchedTiles();
             } while (CheckMatches());
-        }
+        //}
     }
 
     private Sprite GetSpriteAt(int column, int row)
@@ -301,7 +301,8 @@ public class GridManager : MonoBehaviour
                         Tile current = Grid[column, filler];
                         next.row = filler;
                         next.MoveToPosition = current.Position;
-                        moveToPosForPulledTile = new Vector2 (current.Position.x, current.Position.y+ Distance);
+                        moveToPosForPulledTile = new Vector2(next.Position.x, next.Position.y + Distance);
+                        Grid[column, filler] = next;
                         current.DisactivateTile();
                     }
                     pullNewTile(column, GridDimension - 1, new Vector3(moveToPosForPulledTile.x, moveToPosForPulledTile.y, 0));
@@ -311,8 +312,8 @@ public class GridManager : MonoBehaviour
 
         foreach (Tile tile in Grid) {
             if (tile.Position != tile.MoveToPosition) tile.moveTo();
-            if (tile.isMatched) tile.DisactivateTile();
-            Grid[tile.column, tile.row] = tile;
+            //if (tile.isMatched) tile.DisactivateTile();
+            //Grid[tile.column, tile.row] = tile;
         }
     }
 
@@ -353,8 +354,14 @@ public class GridManager : MonoBehaviour
             if (((Vector2)selectedTileTransform.position - moveToTilePos).magnitude < 0.15f) {
 
                 changeTilesOnGrid(selectedTile, moveToTile);
-                if (CheckMatches()) SwapTiles(moveToTile, selectedTile);
-                else {
+                if (CheckMatches())
+                {
+                    SwapTiles(moveToTile, selectedTile);
+                    moveToTileTransform.position =  selectedTilePos;
+                    selectedTileTransform.position = moveToTilePos;
+                }
+                else
+                {
                     isSwiping = false;
                     isSwipingBack = true;
                     changeTilesOnGrid(selectedTile, moveToTile);
