@@ -126,14 +126,14 @@ public class GridManager : MonoBehaviour
     }
 
 
-    public void SwapTiles(Tile tile1, Tile tile2) // 1
+    public void SwapTiles(/*Tile tile1, Tile tile2*/) // 1
     {
 
-        Tile tileThis1 = tile1;
-        SpriteRenderer renderer1 = tileThis1._spriteRenderer;
+        //Tile tileThis1 = tile1;
+        //SpriteRenderer renderer1 = tileThis1._spriteRenderer;
 
-        Tile tileThis2 = tile2; 
-        SpriteRenderer renderer2 = tileThis2._spriteRenderer;
+        //Tile tileThis2 = tile2; 
+        //SpriteRenderer renderer2 = tileThis2._spriteRenderer;
 
         //3
         //Sprite temp = renderer1.sprite;
@@ -191,7 +191,7 @@ public class GridManager : MonoBehaviour
                 SpriteRenderer current = GetSpriteRendererAt(column, row); // 3
                 Tile currentTile = Grid[column, row];
 
-                List<SpriteRenderer> horizontalMatches = FindColumnMatchForTile(column, row, current.sprite); // 4
+                List<SpriteRenderer> horizontalMatches = FindColumnMatchForTile(column, row, currentTile._spriteRenderer.sprite /*current.sprite*/); // 4
                 
                 if (horizontalMatches.Count >= 2)
                 {
@@ -202,7 +202,7 @@ public class GridManager : MonoBehaviour
                     matchedTileTiles.Add(currentTile);
                 }
 
-                List<SpriteRenderer> verticalMatches = FindRowMatchForTile(column, row, current.sprite); // 6
+                List<SpriteRenderer> verticalMatches = FindRowMatchForTile(column, row, currentTile._spriteRenderer.sprite); // 6
                 if (verticalMatches.Count >= 2)
                 {
                     matchedTiles.UnionWith(verticalMatches);
@@ -225,7 +225,7 @@ public class GridManager : MonoBehaviour
         }
 
 
-        return matchedTiles.Count > 0; // 8
+        return matchedTileTiles.Count > 0; // 8
     }
 
     List <SpriteRenderer> FindColumnMatchForTile(int col, int row, Sprite sprite)
@@ -260,7 +260,7 @@ public class GridManager : MonoBehaviour
                 break;
             }
             result.Add(nextRow);
-            columnMatches.Add(tile);
+            rowMatches.Add(tile);
         }
         return result;
     }
@@ -286,35 +286,42 @@ public class GridManager : MonoBehaviour
     //    }
     //}
 
-    private void getAllMatchedTiles() {
+    private void getAllMatchedTiles()
+    {
+        Vector2 moveToPosForPulledTile = Vector2.zero;
         for (int column = 0; column < GridDimension; column++)
         {
             for (int row = 0; row < GridDimension; row++) // 1
             {
                 while (Grid[column,row].isMatched) // 2
                 {
-                    Vector2 moveToPosForPulledTile = Vector2.zero; 
                     //going up on column and assign new coordinates to upper tile, wit other words, make coordinates of upper tile equal to current tile
                     for (int filler = row; filler < GridDimension - 1; filler++) // 3
                     {
                         Tile next = Grid[column, filler+1];
                         Tile current = Grid[column, filler];
                         next.row = filler;
+                        //if (current.Position.y == current.MoveToPosition.y) next.MoveToPosition = current.Position;
+                        //else next.MoveToPosition = current.MoveToPosition;
+
                         next.MoveToPosition = current.Position;
                         moveToPosForPulledTile = new Vector2(next.Position.x, next.Position.y + Distance);
                         Grid[column, filler] = next;
-                        current.DisactivateTile();
+                        if (current.isMatched) current.DisactivateTile();
+                        next.moveTo();
                     }
                     pullNewTile(column, GridDimension - 1, new Vector3(moveToPosForPulledTile.x, moveToPosForPulledTile.y, 0));
+                    //foreach (Tile tile in Grid)
+                    //{
+                    //    if (tile.Position != tile.MoveToPosition) tile.moveTo();
+                    //    //if (tile.isMatched) tile.DisactivateTile();
+                    //    //Grid[tile.column, tile.row] = tile;
+                    //}
                 }
             }
         }
 
-        foreach (Tile tile in Grid) {
-            if (tile.Position != tile.MoveToPosition) tile.moveTo();
-            //if (tile.isMatched) tile.DisactivateTile();
-            //Grid[tile.column, tile.row] = tile;
-        }
+       
     }
 
     public void swipeAnimation(Tile selectedTile, Tile moveToTile) {
@@ -356,7 +363,7 @@ public class GridManager : MonoBehaviour
                 changeTilesOnGrid(selectedTile, moveToTile);
                 if (CheckMatches())
                 {
-                    SwapTiles(moveToTile, selectedTile);
+                    SwapTiles(/*moveToTile, selectedTile*/);
                     moveToTileTransform.position =  selectedTilePos;
                     selectedTileTransform.position = moveToTilePos;
                 }
