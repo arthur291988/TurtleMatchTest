@@ -37,6 +37,9 @@ public class Tile : MonoBehaviour
 
     public bool isMatched;
 
+    [NonSerialized]
+    public int spriteNumber;
+
     //private void OnEnable()
     //{
     //    isMoving=false;

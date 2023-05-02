@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEditor.VersionControl;
 using UnityEngine;
+using UnityEngine.U2D;
 using UnityEngine.UIElements;
 using static UnityEngine.Rendering.DebugUI.Table;
 
@@ -16,6 +17,7 @@ public class GridManager : MonoBehaviour
 
 
     public List<Sprite> Sprites = new List<Sprite>();
+    public SpriteAtlas spriteAtlass;
     public GameObject TilePrefab;
     public int GridDimension = 8;
     public float Distance = 1.1f;
@@ -31,7 +33,9 @@ public class GridManager : MonoBehaviour
     private Tile moveToTile;
 
 
+    [NonSerialized]
     public List<Tile> columnMatches;
+    [NonSerialized]
     public List<Tile> rowMatches;
 
     [NonSerialized]
@@ -65,19 +69,29 @@ public class GridManager : MonoBehaviour
         {
             for (int column = 0; column < GridDimension; column++) // 2
             {
-                List<Sprite> possibleSprites = new List<Sprite>(Sprites); // 1
+                //List<Sprite> possibleSprites = new List<Sprite>(Sprites); // 1
 
+                List<int> possibleSprites = new List<int>() { 1, 2, 3, 4, 5 }; // 1
                 //Choose what sprite to use for this cell
-                Sprite left1 = GetSpriteAt(column - 1, row); //2
-                Sprite left2 = GetSpriteAt(column - 2, row);
-                if (left2 != null && left1 == left2) // 3
+                //Sprite left1 = GetSpriteAt(column - 1, row); //2
+                //Sprite left2 = GetSpriteAt(column - 2, row);
+
+                int left1 = GetSpriteAt(column - 1, row); //2
+                int left2 = GetSpriteAt(column - 2, row);
+
+                if (left2 != 0 && left1 == left2) // 3
                 {
                     possibleSprites.Remove(left1); // 4
                 }
 
-                Sprite down1 = GetSpriteAt(column, row - 1); // 5
-                Sprite down2 = GetSpriteAt(column, row - 2);
-                if (down2 != null && down1 == down2)
+                //Sprite down1 = GetSpriteAt(column, row - 1); // 5
+                //Sprite down2 = GetSpriteAt(column, row - 2);
+
+
+                int down1 = GetSpriteAt(column, row - 1); // 5
+                int down2 = GetSpriteAt(column, row - 2);
+
+                if (down2 != 0 && down1 == down2)
                 {
                     possibleSprites.Remove(down1);
                 }
@@ -88,7 +102,8 @@ public class GridManager : MonoBehaviour
 
 
                 SpriteRenderer renderer = ObjectPulled.GetComponent<SpriteRenderer>(); // 4
-                renderer.sprite = possibleSprites[UnityEngine.Random.Range(0, possibleSprites.Count)]; // 5
+                int spriteNo = possibleSprites[UnityEngine.Random.Range(0, possibleSprites.Count)];
+                renderer.sprite = spriteAtlass.GetSprite(spriteNo.ToString()); // 5
                 //ObjectPulled.transform.parent = transform; // 6
                 ObjectPulled.transform.position = new Vector3(column * Distance, row * Distance, 0) + positionOffset; // 7
                 Tile tile = ObjectPulled.GetComponent<Tile>();
@@ -97,6 +112,7 @@ public class GridManager : MonoBehaviour
                 tile.row = row;
                 tile.column = column;
                 tile._spriteRenderer = renderer;
+                tile.spriteNumber = spriteNo;
 
                 ObjectPulled.SetActive(true);
 
@@ -111,7 +127,8 @@ public class GridManager : MonoBehaviour
         ObjectPulledList = ObjectPuller.current.GetTilePullList();
         ObjectPulled = ObjectPuller.current.GetGameObjectFromPull(ObjectPulledList); 
         SpriteRenderer renderer = ObjectPulled.GetComponent<SpriteRenderer>();
-        renderer.sprite = Sprites[UnityEngine.Random.Range(0, Sprites.Count)];
+        int spriteNo = UnityEngine.Random.Range(1, 6);
+        renderer.sprite = spriteAtlass.GetSprite(spriteNo.ToString()); //Sprites[UnityEngine.Random.Range(0, Sprites.Count)];
         ObjectPulled.transform.position = position; 
         Tile tile = ObjectPulled.GetComponent<Tile>();
         tile.Position = position;
@@ -119,6 +136,7 @@ public class GridManager : MonoBehaviour
         tile.row = row;
         tile.column = column;
         tile._spriteRenderer = renderer;
+        tile.spriteNumber = spriteNo;
 
         ObjectPulled.SetActive(true);
 
@@ -143,31 +161,20 @@ public class GridManager : MonoBehaviour
         isSwiping = false;
 
 
-        //bool changesOccurs = CheckMatches();
-        //if (!changesOccurs)
-        //{
-        //    temp = renderer1.sprite;
-        //    renderer1.sprite = renderer2.sprite;
-        //    renderer2.sprite = temp;
-        //    isSwipingBack = true;
-        //}
-        //else
-        //{
-            do
-            {
-                getAllMatchedTiles();
-            } while (CheckMatches());
-        //}
+        getAllMatchedTiles();
     }
 
-    private Sprite GetSpriteAt(int column, int row)
+    private int GetSpriteAt(int column, int row)
     {
         if (column < 0 || column >= GridDimension
             || row < 0 || row >= GridDimension)
-            return null;
+            return 0;
         Tile tile = Grid[column, row];
-        SpriteRenderer renderer = tile._spriteRenderer;
-        return renderer.sprite;
+
+
+        //SpriteRenderer renderer = tile._spriteRenderer;
+        //return renderer.sprite;
+        return tile.spriteNumber;
     }
 
     SpriteRenderer GetSpriteRendererAt(int column, int row)
@@ -288,6 +295,7 @@ public class GridManager : MonoBehaviour
 
     private void getAllMatchedTiles()
     {
+        int x = 0;
         Vector2 moveToPosForPulledTile = Vector2.zero;
         for (int column = 0; column < GridDimension; column++)
         {
@@ -298,30 +306,45 @@ public class GridManager : MonoBehaviour
                     //going up on column and assign new coordinates to upper tile, wit other words, make coordinates of upper tile equal to current tile
                     for (int filler = row; filler < GridDimension - 1; filler++) // 3
                     {
-                        Tile next = Grid[column, filler+1];
-                        Tile current = Grid[column, filler];
-                        next.row = filler;
-                        //if (current.Position.y == current.MoveToPosition.y) next.MoveToPosition = current.Position;
-                        //else next.MoveToPosition = current.MoveToPosition;
 
-                        next.MoveToPosition = current.Position;
-                        moveToPosForPulledTile = new Vector2(next.Position.x, next.Position.y + Distance);
+                        Tile next = Grid[column, filler + 1];
+                        Tile current = Grid[column, filler];
+
+                        next.MoveToPosition = Grid[column, filler].Position;
+                        next.row = filler;
                         Grid[column, filler] = next;
+
+                        //if (x == 0) { 
+                        //    Debug.Log(Grid[column, filler].row + " " + current.row);
+                        //    x++;
+                        //}
+
+                        //Grid[column, filler].moveTo();
+
+                        moveToPosForPulledTile = new Vector2(Grid[column, filler].Position.x, Grid[column, filler].Position.y + Distance);
+
+                        //next.row = filler;
+                        ////if (current.Position.y == current.MoveToPosition.y) next.MoveToPosition = current.Position;
+                        ////else next.MoveToPosition = current.MoveToPosition;
+
+                        //next.MoveToPosition = current.Position;
+                        //moveToPosForPulledTile = new Vector2(next.Position.x, next.Position.y + Distance);
+                        //Grid[column, filler] = next;
                         if (current.isMatched) current.DisactivateTile();
-                        next.moveTo();
+                        //next.moveTo();
                     }
                     pullNewTile(column, GridDimension - 1, new Vector3(moveToPosForPulledTile.x, moveToPosForPulledTile.y, 0));
-                    //foreach (Tile tile in Grid)
-                    //{
-                    //    if (tile.Position != tile.MoveToPosition) tile.moveTo();
-                    //    //if (tile.isMatched) tile.DisactivateTile();
-                    //    //Grid[tile.column, tile.row] = tile;
-                    //}
+                    
                 }
             }
         }
+        foreach (Tile tile in Grid)
+        {
+            if (tile.Position != tile.MoveToPosition) tile.moveTo();
+            //if (tile.isMatched) tile.DisactivateTile();
+            //Grid[tile.column, tile.row] = tile;
+        }
 
-       
     }
 
     public void swipeAnimation(Tile selectedTile, Tile moveToTile) {
