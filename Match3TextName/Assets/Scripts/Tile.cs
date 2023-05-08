@@ -6,9 +6,9 @@ public class Tile : MonoBehaviour
 
     //private static Tile selected; // 1 
     private SpriteRenderer Renderer; // 2
-    [NonSerialized]
+    //[NonSerialized]
     public Vector2 Position;
-    [NonSerialized]
+    //[NonSerialized]
     public Vector2 MoveToPosition;
 
     [NonSerialized]
@@ -22,9 +22,9 @@ public class Tile : MonoBehaviour
     [NonSerialized]
     public GameObject _gameObject;
 
-    [NonSerialized]
+    //[NonSerialized]
     public int row;
-    [NonSerialized]
+    //[NonSerialized]
     public int column;
 
     private bool swipeSessionStarted;
@@ -33,12 +33,22 @@ public class Tile : MonoBehaviour
     [NonSerialized]
     public SpriteRenderer _spriteRenderer;
 
-    private bool isMoving;
+    [NonSerialized]
+    public bool isMoving;
 
+    [NonSerialized]
     public bool isMatched;
 
     [NonSerialized]
     public int spriteNumber;
+
+    [NonSerialized]
+    public bool isControlTile;
+
+    [NonSerialized]
+    public bool toRemove;
+
+    private float moveSpeed;
 
     //private void OnEnable()
     //{
@@ -46,13 +56,16 @@ public class Tile : MonoBehaviour
     //    isMatched=false;
     //}
 
-    // Start is called before the first frame update
-    void Start()
+
+    private void OnEnable()
     {
+        toRemove = false;
+        moveSpeed = 0.15f; // 0.15
         Renderer = GetComponent<SpriteRenderer>();
         _transform = transform;
         _gameObject = _transform.gameObject;
         swipeSessionStarted = false;
+        isMatched = false;
     }
 
 
@@ -69,7 +82,7 @@ public class Tile : MonoBehaviour
     public void DisactivateTile()
     {
         isMoving = false;
-        isMatched = false;
+        isControlTile = false;
         _gameObject.SetActive(false);
     }
 
@@ -77,27 +90,6 @@ public class Tile : MonoBehaviour
     {
         touchStartPos = CommonData.Instance._camera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0));
         swipeSessionStarted = true;
-        //if (selected != null)
-        //{
-        //    if (selected == this)
-        //        return;
-        //    selected.Unselect();
-        //    if (Vector2Int.Distance(selected.Position, Position) == 1)
-        //    {
-        //        GridManager.Instance.SwapTiles(Position, selected.Position);
-        //        selected = null;
-        //    }
-        //    else
-        //    {
-        //        selected = this;
-        //        Select();
-        //    }
-        //}
-        //else
-        //{
-        //    selected = this;
-        //    Select();
-        //}
     }
 
     private void OnMouseDrag()
@@ -158,12 +150,17 @@ public class Tile : MonoBehaviour
     {
         if (isMoving)
         {
-            _transform.position = Vector2.Lerp(_transform.position, MoveToPosition, 0.2f);
+            _transform.position = Vector2.Lerp(_transform.position, MoveToPosition, moveSpeed);
             if (((Vector2)_transform.position - MoveToPosition).magnitude < 0.15f)
             {
-                isMoving = false;
                 _transform.position = MoveToPosition;
                 Position = MoveToPosition;
+                isMoving = false;
+                if (isControlTile)
+                {
+                    isControlTile = false;
+                    GridManager.Instance.checkMatchesAfterTilesMoveStopped();
+                }
             }
         }
     }
