@@ -19,9 +19,9 @@ public class GridManager : MonoBehaviour
     //public int GridDimension = 8;
 
     [NonSerialized]
-    public int GridWidth = 8;
+    public int GridWidth;
     [NonSerialized]
-    public int GridHeight = 10;
+    public int GridHeight;
     [NonSerialized]
     public float Distance;
     private float topInitPosition;
@@ -48,7 +48,8 @@ public class GridManager : MonoBehaviour
 
     [NonSerialized]
     public bool isSwiping;
-    private bool isSwipingBack;
+    [NonSerialized]
+    public bool isSwipingBack;
 
     [NonSerialized]
     public bool tilesAreMoving;
@@ -66,6 +67,8 @@ public class GridManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        GridWidth = 7;
+        GridHeight = 7;
         Distance = 1.2f;
         controlTileIsAssigned = false;
         tilesAreMoving = false;
@@ -554,7 +557,7 @@ public class GridManager : MonoBehaviour
 
 
     public IEnumerator checkMatchesCoroutine () {
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.2f);
         tilesAreMoving = false;
         if (CheckMatches())
         {
@@ -574,13 +577,15 @@ public class GridManager : MonoBehaviour
         //}
     }
 
-    // Update is called once per frame
-    void Update()
+
+    private void FixedUpdate()
     {
-        if (isSwiping) {
+        if (isSwiping)
+        {
             selectedTileTransform.position = Vector2.Lerp(selectedTileTransform.position, moveToTilePos, 0.2f);
             moveToTileTransform.position = Vector2.Lerp(moveToTileTransform.position, selectedTilePos, 0.2f);
-            if (((Vector2)selectedTileTransform.position - moveToTilePos).magnitude < 0.15f) {
+            if (((Vector2)selectedTileTransform.position - moveToTilePos).magnitude < 0.15f)
+            {
 
                 moveToTileTransform.position = selectedTilePos;
                 selectedTileTransform.position = moveToTilePos;
@@ -605,11 +610,19 @@ public class GridManager : MonoBehaviour
             selectedTileTransform.position = Vector2.Lerp(selectedTileTransform.position, selectedTilePos, 0.2f);
             moveToTileTransform.position = Vector2.Lerp(moveToTileTransform.position, moveToTilePos, 0.2f);
 
-            if (((Vector2)selectedTileTransform.position - selectedTilePos).magnitude < 0.15f) {
+            if (((Vector2)selectedTileTransform.position - selectedTilePos).magnitude < 0.15f)
+            {
                 isSwipingBack = false;
                 moveToTileTransform.position = moveToTilePos;
                 selectedTileTransform.position = selectedTilePos;
             }
         }
     }
+
+
+    //// Update is called once per frame
+    //void Update()
+    //{
+        
+    //}
 }

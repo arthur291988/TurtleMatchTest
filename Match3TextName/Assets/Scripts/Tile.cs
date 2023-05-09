@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class Tile : MonoBehaviour
@@ -50,6 +51,8 @@ public class Tile : MonoBehaviour
 
     private float moveSpeed;
 
+    public Animator animator; 
+
     //private void OnEnable()
     //{
     //    isMoving=false;
@@ -92,9 +95,24 @@ public class Tile : MonoBehaviour
         swipeSessionStarted = true;
     }
 
+    private IEnumerator trembleAnim() {
+        animator.SetBool("trambleAnim", true);
+        yield return new WaitForSeconds(0.1f);
+
+        animator.SetBool("trambleAnim", false);
+    }
+
+    private IEnumerator fallAnim()
+    {
+        animator.SetBool("fallAnim", true);
+        yield return new WaitForSeconds(0.1f);
+
+        animator.SetBool("fallAnim", false);
+    }
+
     private void OnMouseDrag()
     {
-        if (!GridManager.Instance.isSwiping && swipeSessionStarted)
+        if (!GridManager.Instance.isSwiping && swipeSessionStarted && !GridManager.Instance.isSwipingBack && !GridManager.Instance.tilesAreMoving)
         {
             touchDragPos = CommonData.Instance._camera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0));
             if ((touchDragPos - touchStartPos).magnitude > maxSwipeDistance)
@@ -105,15 +123,16 @@ public class Tile : MonoBehaviour
                     {
                         //GridManager.Instance.SwapTiles(new Vector2Int((int)(Position.x - GridManager.Instance.Distance),Position.y), Position);
 
-
-                        GridManager.Instance.swipeAnimation(this, GridManager.Instance.Grid[column - 1, row]);
+                        if (column - 1 >= 0) GridManager.Instance.swipeAnimation(this, GridManager.Instance.Grid[column - 1, row]);
+                        else StartCoroutine(trembleAnim());
 
                     }
                     if (touchDragPos.x > touchStartPos.x)
                     {
                         //GridManager.Instance.SwapTiles(new Vector2Int((int)(Position.x + GridManager.Instance.Distance), Position.y), Position);
 
-                        GridManager.Instance.swipeAnimation(this, GridManager.Instance.Grid[column + 1, row]);
+                        if (column + 1 <= GridManager.Instance.GridWidth - 1) GridManager.Instance.swipeAnimation(this, GridManager.Instance.Grid[column + 1, row]);
+                        else StartCoroutine(trembleAnim());
                     }
                     swipeSessionStarted = false;
 
@@ -126,14 +145,16 @@ public class Tile : MonoBehaviour
                     {
                         //GridManager.Instance.SwapTiles(new Vector2Int(Position.x, (int)(Position.y - GridManager.Instance.Distance)), Position);
 
-                        GridManager.Instance.swipeAnimation(this, GridManager.Instance.Grid[column, row - 1]);
+                        if (row - 1 >= 0) GridManager.Instance.swipeAnimation(this, GridManager.Instance.Grid[column, row - 1]);
+                        else StartCoroutine(trembleAnim());
                     }
                     if (touchDragPos.y > touchStartPos.y)
                     {
                         //GridManager.Instance.SwapTiles(new Vector2Int(Position.x, (int)(Position.y + GridManager.Instance.Distance)), Position);
 
 
-                        GridManager.Instance.swipeAnimation(this, GridManager.Instance.Grid[column, row + 1]);
+                        if (row + 1 <= GridManager.Instance.GridHeight-1) GridManager.Instance.swipeAnimation(this, GridManager.Instance.Grid[column, row + 1]);
+                        else StartCoroutine(trembleAnim());
                     }
                     swipeSessionStarted = false;
                 }
@@ -146,7 +167,12 @@ public class Tile : MonoBehaviour
         isMoving = true;
     }
 
-    void Update()
+    //void Update()
+    //{
+        
+    //}
+
+    private void FixedUpdate()
     {
         if (isMoving)
         {
@@ -156,6 +182,7 @@ public class Tile : MonoBehaviour
                 _transform.position = MoveToPosition;
                 Position = MoveToPosition;
                 isMoving = false;
+                StartCoroutine(fallAnim());
                 if (isControlTile)
                 {
                     isControlTile = false;
