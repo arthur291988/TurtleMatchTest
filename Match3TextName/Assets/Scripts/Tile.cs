@@ -42,6 +42,8 @@ public class Tile : MonoBehaviour
 
     [NonSerialized]
     public int spriteNumber;
+    [NonSerialized]
+    public int indexOfResource;
 
     [NonSerialized]
     public bool isControlTile;
@@ -69,6 +71,8 @@ public class Tile : MonoBehaviour
         _gameObject = _transform.gameObject;
         swipeSessionStarted = false;
         isMatched = false;
+        //animator.SetBool("fallAnim", false);
+        //animator.SetBool("trambleAnim", false);
     }
 
 
@@ -86,6 +90,7 @@ public class Tile : MonoBehaviour
     {
         isMoving = false;
         isControlTile = false;
+        _transform.localScale = Vector3.one;
         _gameObject.SetActive(false);
     }
 
@@ -102,13 +107,25 @@ public class Tile : MonoBehaviour
         animator.SetBool("trambleAnim", false);
     }
 
-    private IEnumerator fallAnim()
+    public void fallAnimFalse()
     {
-        animator.SetBool("fallAnim", true);
-        yield return new WaitForSeconds(0.1f);
-
         animator.SetBool("fallAnim", false);
     }
+
+    public void fallAnimPlay()
+    {
+        animator.SetBool("fallAnim", true);
+        Invoke("fallAnimFalse", 0.1f);
+    }
+
+
+    //private IEnumerator fallAnim()
+    //{
+    //    animator.SetBool("fallAnim", true);
+    //    yield return new WaitForSeconds(0.1f);
+
+    //    animator.SetBool("fallAnim", false);
+    //}
 
     private void OnMouseDrag()
     {
@@ -182,7 +199,8 @@ public class Tile : MonoBehaviour
                 _transform.position = MoveToPosition;
                 Position = MoveToPosition;
                 isMoving = false;
-                StartCoroutine(fallAnim());
+                //StartCoroutine(fallAnim());
+                fallAnimPlay();
                 if (isControlTile)
                 {
                     isControlTile = false;
